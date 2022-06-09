@@ -1,0 +1,102 @@
+/* Query 1 */
+
+SELECT
+  g.Name Genre,
+  STRFTIME('%Y', i.InvoiceDate) Year,
+  SUM(il.UnitPrice * il.Quantity) RockSales
+FROM Genre g
+JOIN track t
+  ON g.GenreId = t.GenreId
+JOIN InvoiceLine il
+  ON t.TrackId = il.TrackId
+JOIN invoice i
+  ON i.InvoiceId = il.InvoiceId
+WHERE Genre LIKE "ROCK"
+GROUP BY 1,
+         2
+ORDER BY 2;
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/* Query 2 */
+
+SELECT
+  g.GenreId,
+  g.Name Genre,
+  AVG(t.Milliseconds) AverageMilliseconds,
+  p.Name Playlist
+FROM Track t
+JOIN Genre g
+  ON g.GenreId = t.GenreId
+JOIN PlaylistTrack pt
+  ON t.TrackId = pt.TrackId
+JOIN Playlist p
+  ON p.PlaylistId = pt.PlaylistId
+WHERE p.name NOT LIKE "TV SHOWS"
+GROUP BY 1,
+         2
+ORDER BY 3 DESC;
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/* Query 3 */
+
+WITH t1
+AS (SELECT
+  c.Country,
+  SUM(i.Total) CountryTotal
+FROM Customer c
+JOIN Invoice i
+  ON c.CustomerId = i.CustomerId
+GROUP BY 1
+ORDER BY 2 DESC)
+
+SELECT
+  t1.*,
+  (SELECT
+    AVG(CountryTotal)
+  FROM t1)
+  AverageCountryTotal,
+  CASE
+    WHEN CountryTotal > (SELECT
+        AVG(CountryTotal)
+      FROM t1) THEN "Higher Than Average"
+    ELSE "Lower Than Average"
+  END AS ComparedToAverage
+FROM t1;
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/* Query 4 */
+
+WITH t1
+AS (SELECT DISTINCT
+  g.Name Genre,
+  art.Name Artist
+FROM Genre g
+JOIN Track t
+  ON g.GenreId = t.GenreId
+JOIN Album alb
+  ON alb.AlbumId = t.AlbumId
+JOIN Artist art
+  ON art.ArtistId = alb.ArtistId
+WHERE g.name LIKE "Alternative & Punk"),
+
+t2
+AS (SELECT
+  art.Name Artist,
+  SUM(il.UnitPrice * il.Quantity) Sales
+FROM Artist art
+JOIN Album alb
+  ON art.ArtistId = alb.ArtistId
+JOIN Track t
+  ON alb.AlbumId = t.AlbumId
+JOIN InvoiceLine il
+  ON t.TrackId = il.TrackId
+GROUP BY 1
+ORDER BY 2 DESC)
+
+SELECT
+  t1.*,
+  t2.Sales
+FROM t1
+JOIN t2
+  ON t1.Artist = t2.Artist
+LIMIT 10;
